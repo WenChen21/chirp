@@ -2,6 +2,10 @@ import type { GetStaticProps, InferGetStaticPropsType, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { api } from "npm/utils/api";
+import { PageLayout } from "npm/components/layout";
+import { LoadingPage } from "npm/components/loading";
+import { PostView } from "npm/components/postview";
+import { generateSSGHelper } from "npm/server/api/helpers/ssgServerhelper";
 const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPosts.useQuery({ userId: props.userId })
   if (isLoading) return <LoadingPage />;
@@ -40,21 +44,11 @@ const ProfilePage: NextPage<PageProps> = ({ username }) => {
     </>
   );
 };
-import { appRouter } from "npm/server/api/root";
-// import { createProxySSGHelpers } from '@trpc/react-query/ssg';
-import { prisma } from "npm/server/db";
-import superjson from "superjson";
-import { createServerSideHelpers } from '@trpc/react-query/server';
-import { PageLayout } from "npm/components/layout";
-import { LoadingPage } from "npm/components/loading";
-import { PostView } from "npm/components/postview";
+
+
 
 export const getStaticProps: GetStaticProps = async (context) => {
-  const ssg = createServerSideHelpers({
-    router: appRouter,
-    ctx: { prisma, userId: null },
-    transformer: superjson,
-  });
+  const ssg = generateSSGHelper();
 
   const slug = context.params?.slug;
   if (typeof slug !== "string") throw new Error("no slug!");
