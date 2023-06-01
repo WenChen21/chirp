@@ -3,7 +3,7 @@ import { createTRPCRouter, privateProcedure, publicProcedure } from "npm/server/
 import { clerkClient } from "@clerk/nextjs/server";
 
 import { TRPCError } from "@trpc/server";
-import { Input } from "postcss";
+
 
 import { Ratelimit } from "@upstash/ratelimit"; // for deno: see above
 import { Redis } from "@upstash/redis";
@@ -52,7 +52,7 @@ export const postsRouter = createTRPCRouter({
       const { success } = await ratelimit.limit(authorId);
       if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
 
-      const post = await ctx.prisma.post.create({
+      await ctx.prisma.post.create({
         data: {
           authorId,
           content: input.content,

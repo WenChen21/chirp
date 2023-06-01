@@ -1,5 +1,3 @@
-import { number } from "zod";
-
 export const LoadingSpinner = (props: { size?: number }) => {
   return (
     <div role="status">

@@ -1,4 +1,4 @@
-import { SignIn, SignInButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
 import { api } from "npm/utils/api";
 import type { RouterOutputs } from "npm/utils/api";
@@ -107,7 +107,7 @@ const Feed = () => {
   </div>)
 }
 const Home: NextPage = () => {
-  const { user, isLoaded: userLoaded, isSignedIn } = useUser();
+  const { isLoaded: userLoaded, isSignedIn } = useUser();
   api.posts.getAll.useQuery();
   if (!userLoaded) return <div />;
 
