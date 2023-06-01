@@ -113,11 +113,6 @@ const Home: NextPage = () => {
   if (!userLoaded) return <div />;
 
   return (
-    //  <Head>
-    //     <title>Chirp</title>
-    //     <meta name="description" content="💭" />
-    //     <link rel="icon" href="/favicon.ico" />
-    //   </Head> 
     < PageLayout >
       <div className="flex border-b border-slate-400 p-4">
         {!isSignedIn && (
