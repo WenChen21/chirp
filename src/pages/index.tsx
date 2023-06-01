@@ -1,4 +1,4 @@
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
 import { api } from "npm/utils/api";
 
@@ -59,7 +59,7 @@ const CreatePostWizard = () => {
         disabled={isPosting} />
       {input !== "" && !isPosting && (<button onClick={() => mutate({ content: input })} disabled={isPosting}>Post</button>)}
       {isPosting && <div className="flex flex-col justify-center items-center"><LoadingSpinner size={20} /></div>}
-
+      <div className="flex justify-center"><SignOutButton /></div>
     </div>)
 
 
