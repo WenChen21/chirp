@@ -13,7 +13,7 @@ import { PostView } from "npm/components/postview";
 const CreatePostWizard = () => {
   const { user } = useUser();
   const [input, setInput] = useState("");
-  console.log(user);
+
   const ctx = api.useContext();
   const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
     onSuccess: () => {
@@ -78,7 +78,6 @@ const Home: NextPage = () => {
   const { isLoaded: userLoaded, isSignedIn } = useUser();
   api.posts.getAll.useQuery();
   if (!userLoaded) return <div />;
-
   return (
     < PageLayout >
       <div className="flex border-b border-slate-400 p-4">

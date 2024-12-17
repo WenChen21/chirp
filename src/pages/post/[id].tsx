@@ -3,36 +3,32 @@ import Head from "next/head";
 
 import { api } from "npm/utils/api";
 import { PageLayout } from "npm/components/layout";
-import { LoadingPage } from "npm/components/loading";
 import { PostView } from "npm/components/postview";
-const ProfileFeed = (props: { userId: string }) => {
-  const { data, isLoading } = api.posts.getPosts.useQuery({ userId: props.userId })
-  if (isLoading) return <LoadingPage />;
-  if (!data || data.length === 0) return <div>User has not posted</div>;
-  return <div className="flex flex-col">
-    {data.map((fullPost) => <PostView {...fullPost} key={fullPost.post.id} />)}
-  </div>
 
-}
-type PageProps = InferGetStaticPropsType<typeof getStaticProps>
 const SinglePostPage: NextPage<{ id: string }> = ({ id }) => {
+  //getByid gives us all the data given the id of post that we click
   const { data } = api.posts.getById.useQuery({
     id,
   });
   if (!data) return <div>404</div>;
-
+  // we use all that data to find the post and display that post by itself on 
+  // its own page
   return (
     <>
       <Head>
         <title>{`${data.post.content} - @${data.author.username}`}</title>
       </Head>
       <PageLayout>
+        <div className="flex justify-center">
+          <Link href={"/"}>Home </Link>
+        </div>
         <PostView {...data} />
       </PageLayout>
     </>
   );
 };
 import { generateSSGHelper } from "npm/server/api/helpers/ssgServerhelper";
+import Link from "next/link";
 export const getStaticProps: GetStaticProps = async (context) => {
   const ssg = generateSSGHelper();
 

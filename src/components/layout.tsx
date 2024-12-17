@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PropsWithChildren } from "react";
 
 export const PageLayout = (props: PropsWithChildren) => {

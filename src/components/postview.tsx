@@ -1,10 +1,11 @@
 
 import type { RouterOutputs } from "npm/utils/api";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import relativeTime from 'dayjs/plugin/relativeTime';
 import Image from 'next/image';
 import Link from "next/link";
 dayjs.extend(relativeTime);
+
 type PostWithUser = RouterOutputs["posts"]["getAll"][number]
 export const PostView = (props: PostWithUser) => {
   const { post, author } = props;
@@ -34,3 +35,4 @@ export const PostView = (props: PostWithUser) => {
     </div>
   )
 }
+

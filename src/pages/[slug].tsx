@@ -6,6 +6,7 @@ import { PageLayout } from "npm/components/layout";
 import { LoadingPage } from "npm/components/loading";
 import { PostView } from "npm/components/postview";
 import { generateSSGHelper } from "npm/server/api/helpers/ssgServerhelper";
+import Link from "next/link";
 const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPosts.useQuery({ userId: props.userId })
   if (isLoading) return <LoadingPage />;
@@ -28,7 +29,11 @@ const ProfilePage: NextPage<PageProps> = ({ username }) => {
         <title>{data.username}</title>
       </Head>
       <PageLayout>
+
         <div className="relative h-48 border-slate-400 bg-slate-600">
+          <div className="flex justify-center">
+            <Link href={"/"}>Home </Link>
+          </div>
           <Image
             src={data.profileImageUrl}
             alt={`@{data.username?? ""}'s profile pic`}
@@ -40,6 +45,7 @@ const ProfilePage: NextPage<PageProps> = ({ username }) => {
         <div className="p-4 text-2xl ml-4">{`@${data.username ?? ""}`}</div>
         <div className="w-full border-b border-slate-400" />
         <ProfileFeed userId={data.id} />
+
       </PageLayout>
     </>
   );
