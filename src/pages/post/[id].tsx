@@ -1,9 +1,9 @@
-import type { GetStaticProps, InferGetStaticPropsType, NextPage } from "next";
+import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
 
-import { api } from "npm/utils/api";
-import { PageLayout } from "npm/components/layout";
-import { PostView } from "npm/components/postview";
+import { api } from "~/utils/api";
+import { PageLayout } from "~/components/layout";
+import { PostView } from "~/components/postview";
 
 const SinglePostPage: NextPage<{ id: string }> = ({ id }) => {
   //getByid gives us all the data given the id of post that we click
@@ -27,7 +27,7 @@ const SinglePostPage: NextPage<{ id: string }> = ({ id }) => {
     </>
   );
 };
-import { generateSSGHelper } from "npm/server/api/helpers/ssgServerhelper";
+import { generateSSGHelper } from "~/server/api/helpers/ssgServerhelper";
 import Link from "next/link";
 export const getStaticProps: GetStaticProps = async (context) => {
   const ssg = generateSSGHelper();

@@ -1,11 +1,11 @@
 import type { GetStaticProps, InferGetStaticPropsType, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { api } from "npm/utils/api";
-import { PageLayout } from "npm/components/layout";
-import { LoadingPage } from "npm/components/loading";
-import { PostView } from "npm/components/postview";
-import { generateSSGHelper } from "npm/server/api/helpers/ssgServerhelper";
+import { api } from "~/utils/api";
+import { PageLayout } from "~/components/layout";
+import { LoadingPage } from "~/components/loading";
+import { PostView } from "~/components/postview";
+import { generateSSGHelper } from "~/server/api/helpers/ssgServerhelper";
 import Link from "next/link";
 const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPosts.useQuery({ userId: props.userId })

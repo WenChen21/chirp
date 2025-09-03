@@ -1,13 +1,13 @@
 import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
-import { api } from "npm/utils/api";
+import { api } from "~/utils/api";
 
 import Image from 'next/image';
-import { LoadingPage, LoadingSpinner } from "npm/components/loading";
+import { LoadingPage, LoadingSpinner } from "~/components/loading";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { PageLayout } from "npm/components/layout";
-import { PostView } from "npm/components/postview";
+import { PageLayout } from "~/components/layout";
+import { PostView } from "~/components/postview";
 
 
 const CreatePostWizard = () => {
@@ -36,7 +36,7 @@ const CreatePostWizard = () => {
   return (
     <div className="flex gap-3 w-full">
       <Image
-        src={user.profileImageUrl}
+        src={user.imageUrl}
         alt="Profile Image"
         className="h-14 w-14 rounded-full"
         width={56}

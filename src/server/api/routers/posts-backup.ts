@@ -4,8 +4,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { filterUserForClient } from "~/server/api/helpers/filterUserForClient";
-import { createClient } from "~/utils/supabase/server";
+import { filterUserForClient } from "../helpers/filterUserForClient";
+import { createClient } from "../../../utils/supabase/server";
 
 // Define the Post type to match our Supabase table
 type Post = {
@@ -36,8 +36,25 @@ const addUserDataToPosts = async (posts: Post[]) => {
         },
         author: {
           id: post.author_id,
-          username: "Unknown User",
+          username: `user-${post.author_id.slice(-4)}`, // Show last 4 chars
           profileImageUrl: "", // Empty string - will fallback to Clerk's default handling
+          externalUsername: null,
+        },
+      };
+    }
+    
+    // Handle users without username
+    if (!author.username) {
+      return {
+        post: {
+          id: post.id,
+          createdAt: new Date(post.created_at),
+          content: post.content,
+          authorId: post.author_id,
+        },
+        author: {
+          ...author,
+          username: `user-${author.id.slice(-4)}`, // Fallback username
         },
       };
     }
@@ -65,42 +82,39 @@ const ratelimit = new Ratelimit({
 });
 
 export const postsRouter = createTRPCRouter({
-  getById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
-    const supabase = createClient();
-    const { data: post, error } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("id", input.id)
-      .single();
+  getById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const supabase = createClient();
+      const { data: post, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', input.id)
+        .single();
 
-    if (error) {
-      console.error("Supabase error:", error);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch post",
-      });
-    }
+      if (error || !post) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
 
-    return (await addUserDataToPosts([post]))[0];
-  }),
+      return (await addUserDataToPosts([post as Post]))[0];
+    }),
 
   getAll: publicProcedure.query(async () => {
     const supabase = createClient();
     const { data: posts, error } = await supabase
-      .from("posts")
-      .select("*")
-      .order("created_at", { ascending: false })
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
       .limit(100);
 
     if (error) {
-      console.error("Supabase error:", error);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch posts",
+      throw new TRPCError({ 
+        code: "INTERNAL_SERVER_ERROR", 
+        message: `Database error: ${error.message}` 
       });
     }
 
-    return addUserDataToPosts(posts || []);
+    return addUserDataToPosts(posts as Post[] || []);
   }),
 
   getPosts: publicProcedure
@@ -108,48 +122,50 @@ export const postsRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const supabase = createClient();
       const { data: posts, error } = await supabase
-        .from("posts")
-        .select("*")
-        .eq("author_id", input.userId)
-        .order("created_at", { ascending: false })
+        .from('posts')
+        .select('*')
+        .eq('author_id', input.userId)
+        .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) {
-        console.error("Supabase error:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch user posts",
+        throw new TRPCError({ 
+          code: "INTERNAL_SERVER_ERROR", 
+          message: `Database error: ${error.message}` 
         });
       }
 
-      return addUserDataToPosts(posts || []);
+      return addUserDataToPosts(posts as Post[] || []);
     }),
 
   create: privateProcedure
-    .input(z.object({ content: z.string().emoji().min(1).max(280) }))
+    .input(
+      z.object({
+        content: z.string().emoji("Only emojis are allowed").min(1).max(280),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.userId;
       const { success } = await ratelimit.limit(authorId);
       if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
 
       const supabase = createClient();
-      const { data: post, error } = await supabase
-        .from("posts")
+      const { data, error } = await supabase
+        .from('posts')
         .insert({
-          content: input.content,
           author_id: authorId,
+          content: input.content,
         })
         .select()
         .single();
 
       if (error) {
-        console.error("Supabase error:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create post",
+        throw new TRPCError({ 
+          code: "INTERNAL_SERVER_ERROR", 
+          message: `Failed to create post: ${error.message}` 
         });
       }
 
-      return (await addUserDataToPosts([post]))[0];
+      return data;
     }),
 });
