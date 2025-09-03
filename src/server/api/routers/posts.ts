@@ -58,11 +58,24 @@ const addUserDataToPosts = async (posts: Post[]) => {
 };
 
 // Create a new ratelimiter, that allows 3 requests per 1 minute
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(3, "1 m"),
-  analytics: true,
-});
+// Only if Redis is configured
+const createRateLimiter = () => {
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      return new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(3, "1 m"),
+        analytics: true,
+      });
+    }
+    return null;
+  } catch (error) {
+    console.warn("Failed to initialize Redis rate limiter:", error);
+    return null;
+  }
+};
+
+const ratelimit = createRateLimiter();
 
 export const postsRouter = createTRPCRouter({
   getById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
@@ -129,8 +142,12 @@ export const postsRouter = createTRPCRouter({
     .input(z.object({ content: z.string().emoji().min(1).max(280) }))
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.userId;
-      const { success } = await ratelimit.limit(authorId);
-      if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+      
+      // Apply rate limiting only if Redis is configured
+      if (ratelimit) {
+        const { success } = await ratelimit.limit(authorId);
+        if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+      }
 
       const supabase = createClient();
       const { data: post, error } = await supabase
