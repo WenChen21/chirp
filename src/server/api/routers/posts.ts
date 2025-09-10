@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, privateProcedure, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
@@ -58,19 +58,30 @@ const addUserDataToPosts = async (posts: Post[]) => {
 };
 
 // Create a new ratelimiter, that allows 3 requests per 1 minute
-// Only if Redis is configured
+// Only if Redis is configured and accessible
 const createRateLimiter = () => {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-      return new Ratelimit({
-        redis: Redis.fromEnv(),
+      console.log("Attempting to create Redis rate limiter...");
+      const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      });
+      
+      const rateLimiter = new Ratelimit({
+        redis: redis,
         limiter: Ratelimit.slidingWindow(3, "1 m"),
         analytics: true,
       });
+      
+      console.log("Redis rate limiter created successfully");
+      return rateLimiter;
+    } else {
+      console.log("Redis environment variables not configured - rate limiting disabled");
     }
     return null;
   } catch (error) {
-    console.warn("Failed to initialize Redis rate limiter:", error);
+    console.warn("Failed to initialize Redis rate limiter (continuing without rate limiting):", error);
     return null;
   }
 };
@@ -138,18 +149,27 @@ export const postsRouter = createTRPCRouter({
       return addUserDataToPosts(posts || []);
     }),
 
-  create: privateProcedure
-    .input(z.object({ content: z.string().emoji().min(1).max(280) }))
-    .mutation(async ({ ctx, input }) => {
-      const authorId = ctx.userId;
+  create: publicProcedure
+    .input(z.object({ 
+      content: z.string().emoji().min(1).max(280),
+      authorId: z.string().min(1), // Client passes the Clerk user ID
+    }))
+    .mutation(async ({ input }) => {
+      const authorId = input.authorId;
       
-      // Apply rate limiting only if Redis is configured
+      // Apply rate limiting only if Redis is configured and accessible
       if (ratelimit) {
-        const { success } = await ratelimit.limit(authorId);
-        if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+        try {
+          const { success } = await ratelimit.limit(authorId);
+          if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+        } catch (rateLimitError) {
+          console.warn("Rate limit check failed (continuing without rate limiting):", String(rateLimitError));
+          // Continue without rate limiting if Redis fails
+        }
       }
 
       const supabase = createClient();
+      
       const { data: post, error } = await supabase
         .from("posts")
         .insert({
@@ -163,7 +183,7 @@ export const postsRouter = createTRPCRouter({
         console.error("Supabase error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create post",
+          message: `Failed to create post: ${error.message}`,
         });
       }
 

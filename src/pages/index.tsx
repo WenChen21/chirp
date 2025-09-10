@@ -51,13 +51,13 @@ const CreatePostWizard = () => {
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            if (input !== "") {
-              mutate({ content: input });
+            if (input !== "" && user?.id) {
+              mutate({ content: input, authorId: user.id });
             }
           }
         }}
         disabled={isPosting} />
-      {input !== "" && !isPosting && (<button onClick={() => mutate({ content: input })} disabled={isPosting}>Post</button>)}
+      {input !== "" && !isPosting && (<button onClick={() => user?.id && mutate({ content: input, authorId: user.id })} disabled={isPosting}>Post</button>)}
       {isPosting && <div className="flex flex-col justify-center items-center"><LoadingSpinner size={20} /></div>}
       <div className="flex justify-center"><SignOutButton /></div>
     </div>)

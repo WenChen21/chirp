@@ -10,7 +10,6 @@ import { TRPCError, initTRPC } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { auth } from "@clerk/nextjs/server";
 
 /**
  * 1. CONTEXT
@@ -41,19 +40,10 @@ import { auth } from "@clerk/nextjs/server";
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = (_opts: CreateNextContextOptions) => {
-  // Use auth() for Clerk v5 - don't need the req parameter
-  let userId: string | null = null;
-  try {
-    const authResult = auth();
-    userId = authResult?.userId ?? null;
-  } catch (error) {
-    // Gracefully handle auth errors in development/production
-    console.warn("Auth context error:", error);
-    userId = null;
-  }
-
+  // Without middleware, we can't use getAuth(req) reliably
+  // Authentication will be handled at the procedure level using client-side auth state
   return {
-    userId,
+    userId: null as string | null,
   };
 };
 
