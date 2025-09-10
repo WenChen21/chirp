@@ -10,7 +10,7 @@ import { TRPCError, initTRPC } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { getAuth } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 
 /**
  * 1. CONTEXT
@@ -40,10 +40,17 @@ import { getAuth } from "@clerk/nextjs/server";
  *
  * @see https://trpc.io/docs/context
  */
-export const createTRPCContext = (opts: CreateNextContextOptions) => {
-  const { req } = opts;
-  const sesh = getAuth(req)
-  const userId = sesh.userId;
+export const createTRPCContext = (_opts: CreateNextContextOptions) => {
+  // Use auth() for Clerk v5 - don't need the req parameter
+  let userId: string | null = null;
+  try {
+    const authResult = auth();
+    userId = authResult?.userId ?? null;
+  } catch (error) {
+    // Gracefully handle auth errors in development/production
+    console.warn("Auth context error:", error);
+    userId = null;
+  }
 
   return {
     userId,
