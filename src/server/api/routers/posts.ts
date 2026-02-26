@@ -7,7 +7,6 @@ import { Redis } from "@upstash/redis";
 import { filterUserForClient } from "~/server/api/helpers/filterUserForClient";
 import { createClient } from "~/utils/supabase/server";
 
-// Define the Post type to match our Supabase table
 type Post = {
   id: string;
   created_at: string;
@@ -25,7 +24,6 @@ const addUserDataToPosts = async (posts: Post[]) => {
   return posts.map((post) => {
     const author = users.find((user) => user.id === post.author_id);
     
-    // Handle missing users gracefully (e.g., test data or deleted users)
     if (!author) {
       return {
         post: {
@@ -37,7 +35,7 @@ const addUserDataToPosts = async (posts: Post[]) => {
         author: {
           id: post.author_id,
           username: "Unknown User",
-          profileImageUrl: "", // Empty string - will fallback to Clerk's default handling
+          profileImageUrl: "",
         },
       };
     }
@@ -57,8 +55,6 @@ const addUserDataToPosts = async (posts: Post[]) => {
   });
 };
 
-// Create a new ratelimiter, that allows 3 requests per 1 minute
-// Only if Redis is configured and accessible
 const createRateLimiter = () => {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -152,19 +148,17 @@ export const postsRouter = createTRPCRouter({
   create: publicProcedure
     .input(z.object({ 
       content: z.string().emoji().min(1).max(280),
-      authorId: z.string().min(1), // Client passes the Clerk user ID
+      authorId: z.string().min(1), 
     }))
     .mutation(async ({ input }) => {
       const authorId = input.authorId;
       
-      // Apply rate limiting only if Redis is configured and accessible
       if (ratelimit) {
         try {
           const { success } = await ratelimit.limit(authorId);
           if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
         } catch (rateLimitError) {
           console.warn("Rate limit check failed (continuing without rate limiting):", String(rateLimitError));
-          // Continue without rate limiting if Redis fails
         }
       }
 
